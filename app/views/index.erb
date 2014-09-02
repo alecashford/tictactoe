@@ -4,20 +4,10 @@
   <p><b id="player2">Player 2: </b><span id="player2score">1</span></p> -->
   <center>
     <table border="3" width="300" height="300" id="board">
-      <tr>
-        <td id="A1" class="emptyCell" ng-click="flipCell()"></td>
-        <td id="A2" class="emptyCell"></td>
-        <td id="A3" class="emptyCell"></td>
-      </tr>
-      <tr>
-        <td id="B1" class="emptyCell"></td>
-        <td id="B2" class="emptyCell"></td>
-        <td id="B3" class="emptyCell"></td>
-      </tr>
-      <tr>
-        <td id="C1" class="emptyCell"></td>
-        <td id="C2" class="emptyCell"></td>
-        <td id="C3" class="emptyCell"></td>
+      <tr ng-repeat="row in currentBoard">
+        <!-- <td></td> -->
+        <td ng-repeat="cell in row" ng-click="toX(cell)">{{cell.state}}</td>
+
       </tr>
     </table>
   </center>
