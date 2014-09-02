@@ -14,15 +14,3 @@ td {
   max-width: 300px;
   text-align: center;
 }
-
-.x:after {
-  content: "X";
-}
-
-.o:after {
-  content: "O";
-}
-
-.emptyCell:after {
-  content: "?";
-}

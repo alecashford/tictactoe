@@ -8,8 +8,18 @@ app.controller('MainController', ["$scope", "$http", function($scope, $http) {
         if (currentCell.state === '?') {
             console.log(currentCell)
             currentCell.state = 'X'
+            nextMove()
         }
         $scope.toO
+    }
+
+    var nextMove = function() {
+        $http.post('/next_move',
+                   $scope.currentBoard)
+                   .success(function(data) {
+                    // console.log(data)
+                    $scope.currentBoard = data
+                   })
     }
 
     $scope.toO = function() {

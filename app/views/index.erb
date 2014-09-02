@@ -1,13 +1,9 @@
 <div class="containter">
   <h1>Tic Tac Toe</h1>
-<!--   <p><b id="player1">Player 1: </b><span id="player1score">1</span></p>
-  <p><b id="player2">Player 2: </b><span id="player2score">1</span></p> -->
   <center>
     <table border="3" width="300" height="300" id="board">
       <tr ng-repeat="row in currentBoard">
-        <!-- <td></td> -->
         <td ng-repeat="cell in row" ng-click="toX(cell)">{{cell.state}}</td>
-
       </tr>
     </table>
   </center>
