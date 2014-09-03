@@ -28,19 +28,20 @@ app.controller('MainController', ["$scope", "$http", function($scope, $http) {
             return "Computer Wins!!!"
         }
         else if ($scope.winner == 'DRAW') {
-                return "Draw!!!"
+                return "Draw. How about a nice game of chess?"
         }
         else if ($scope.winner == 'USER') {
-            return "Ooooops!"
+            return "Ooops!"
         }
     }
 
+    // Ajax call to 
     var nextMove = function() {
         $http.post('/next_move',
                    $scope.currentBoard)
                    .success(function(data) {
                         $scope.currentBoard = data['board']
-                        $scope.winner = data['score']
+                        $scope.winner = data['winner']
                 })
             }
 
