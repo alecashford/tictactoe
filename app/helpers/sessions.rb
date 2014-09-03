@@ -5,71 +5,77 @@ helpers do
   class Game
     def initialize(board)
       @board = board
-      @candidates = Hash.new(0)
+      @possible_moves = Hash.new(0)
       @winner = ''
     end
 
     def play
-      next_move
-      # if @candidates.length < 1
-      #   best_guess
-      # end
-      @candidates.each { |k, v| return k if v == @candidates.values.max }
+      get_possible_moves
+      move = @possible_moves.select { |k, v| k if v == @possible_moves.values.max }.keys[0]
+      @board.each do |row|
+        row.each do |tile|
+          if tile['id'] == move
+            tile['state'] = 'O'
+          end
+        end
+      end
+      check_for_winner([@board, @board.transpose, diagonals])
+      {score: @winner, board: @board}
     end
 
     private
 
-    def next_move
-      check_rows(@board)
-      check_columns(@board)
-      check_diagonals(@board)
-      best_guess
+    def get_possible_moves
+      check_set([@board, @board.transpose, diagonals])
+      if @possible_moves.length < 1
+        best_guess
+      end
     end
 
-    def check_rows(board)
-      board.each do |row|
-        row_states = row.map { |cell| cell['state']}
-        if (row_states - ['O']).length == 1 && (row_states - ['O'])[0] == '?'
-          @candidates[row[row_states.index('?')]['id']] = 20
-        elsif (row_states - ['X']).length == 1 && (row_states - ['X'])[0] == '?'
-          @candidates[row[row_states.index('?')]['id']] = 10
+    def diagonals
+      [[@board[0][0], @board[1][1], @board[2][2]],
+      [@board[0][2], @board[1][1], @board[2][0]]]
+    end
+
+    def check_set(sets)
+      sets.each do |set|
+        set.each do |row|
+          row_states = row.map { |tile| tile['state']}
+          if (row_states - ['O']).length == 1 && (row_states - ['O'])[0] == '?'
+            @possible_moves[row[row_states.index('?')]['id']] = 20
+          elsif (row_states - ['X']).length == 1 && (row_states - ['X'])[0] == '?'
+            @possible_moves[row[row_states.index('?')]['id']] = 10
+          end
         end
       end
     end
 
-    def check_columns(board)
-      check_rows(board.transpose)
-    end
-
-    def check_diagonals(board)
-      diagonals = [[board[0][0], board[1][1], board[2][2]],
-                   [board[0][2], board[1][1], board[2][0]]]
-      check_rows(diagonals)
-    end
-
     def best_guess
       if @board[1][1]['state'] == '?'
-        @candidates[@board[1][1]['id']] = 10
+        @possible_moves[@board[1][1]['id']] = 10
       else
         xs_on_board = []
         @board.each_with_index do |row, row_index|
-          row.each_with_index do |cell, cell_index|
-            if cell['state'] == 'X'
-              xs_on_board << find_neighbors(row_index - 1, cell_index - 1)
-              xs_on_board << find_neighbors(row_index - 1, cell_index)
-              xs_on_board << find_neighbors(row_index - 1, cell_index + 1)
-              xs_on_board << find_neighbors(row_index, cell_index - 1)
-              xs_on_board << find_neighbors(row_index, cell_index + 1)
-              xs_on_board << find_neighbors(row_index + 1, cell_index - 1)
-              xs_on_board << find_neighbors(row_index + 1, cell_index)
-              xs_on_board << find_neighbors(row_index + 1, cell_index + 1)
+          row.each_with_index do |tile, tile_index|
+            if tile['state'] == 'X'
+              xs_on_board << find_neighbors(row_index - 1, tile_index - 1)
+              xs_on_board << find_neighbors(row_index - 1, tile_index)
+              xs_on_board << find_neighbors(row_index - 1, tile_index + 1)
+              xs_on_board << find_neighbors(row_index, tile_index - 1)
+              xs_on_board << find_neighbors(row_index, tile_index + 1)
+              xs_on_board << find_neighbors(row_index + 1, tile_index - 1)
+              xs_on_board << find_neighbors(row_index + 1, tile_index)
+              xs_on_board << find_neighbors(row_index + 1, tile_index + 1)
             end
           end
         end
-        cleaned_up = xs_on_board.compact.select { |x| x['state'] == '?' }
-        array_of_xs_ids = cleaned_up.map { |x| x['id'] }
+        array_of_xs_ids = xs_on_board.compact.select { |x| x['state'] == '?' }.map { |x| x['id'] }
         array_of_xs_ids.each do |x|
-          @candidates[x] += 2
+          if ['A1', 'A3', 'C1', 'C3'].include?(x)
+            @possible_moves[x] += 4
+          else
+            @possible_moves[x] += 2
+          end
         end
       end
     end
@@ -80,12 +86,22 @@ helpers do
       end
     end
 
-  def board_won?
-    if !@winner.empty?
-      @winner
+    def check_for_winner(sets)
+      if @winner.empty? && @possible_moves.length == 0
+        @winner = 'DRAW'
+      else
+        sets.each do |set|
+          set.each do |row|
+            row_states = row.map { |tile| tile['state']}
+            if (row_states - ['O']).length == 0
+              @winner = 'COMP'
+            elsif (row_states - ['X']).length == 0
+              @winner = 'USER'
+            end
+          end
+        end
+      end
     end
-  end
-
   end # class
 
 
