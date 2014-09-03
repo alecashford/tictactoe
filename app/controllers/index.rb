@@ -1,7 +1,11 @@
+require 'json'
+
 get '/' do
   erb :index
 end
 
-post '/new_move' do
-  
+post '/next_move' do
+  current_board = JSON.parse(request.body.read)
+  game = Game.new(current_board)
+  game.play.to_json
 end

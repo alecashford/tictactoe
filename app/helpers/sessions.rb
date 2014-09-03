@@ -2,138 +2,109 @@ require 'rest-client'
 
 helpers do
 
-  def user
-  	if session[:email]
-  		if @user != nil
-  			return @user
-  		else
-  			@user = User.find_by_email(session[:email])
-  			return @user
-  		end
-  	else
-  		return false
-  	end
-  end
-  
-  def login
-	  user = User.find_by_email(params[:email])
-	  if user
-	    if BCrypt::Password.new(user.password_hash) == params[:password]
-	      session[:user_id] = user.id
-	      session[:house_id] = user.house_id
-	      session[:email] = user.email
-	      session[:first_name] = user.first_name
-	      session[:last_name] = user.last_name
-	      session[:password_hash] = user.password_hash
-	      redirect '/'
-	    end
-	  end
-	  redirect '/register_house'
-  end
-
-  def month
-    months = {1 => "January", 2 => "February", 3 => "March", 4 => "April", 5 => "May", 6 => "June",
-              7 => "July", 8 => "August", 9 => "September", 10 => "October", 11 => "November", 12 => "December"}
-    @month = months[Time.now.strftime("%m").to_i]
-  end
-
-  def true_when_utilities
-  	@house_utilities = Utility.where(:house_id => session[:house_id].to_i)
-  end
-
-  def roommates
-  	roommates = User.where(:house_id => session[:house_id].to_i) #doesn't work when database is empty
-  end
-
-  def authorized?
-  	if user
-	  	if user.email == session[:email] && user.password_hash == session[:password_hash]
-	  		return true
-	  	else
-	  		return false
-	  	end
-	  end
-  end
-
-  def to_cents(raw_input)
-  	(raw_input.to_f * 100).to_i
-  end
-
-  def to_dollars(pennies)
-    pennies / 100.0
-  end
-
-  #takes in raw value of cents and returns string of properly formatted dollar amount.
-  def dollar_format(raw)
-    raw = raw.to_i
-    dollars = (raw / 100)
-    cents = (raw % 100)
-    formatted = "$#{dollars}.#{cents}"
-    if cents < 10
-        formatted += "0"
+  class Game
+    def initialize(board)
+      @board = board
+      @possible_moves = Hash.new(0)
+      @winner = ''
     end
-    formatted
-  end
 
-  def sum_total
-    months_expenditures = Expenditure.where(:house_id => session[:house_id], :active => true).sum("amount")
-    this_months_total = Utility.where(:house_id => session[:house_id], :active => true).sum("amount")
-    return dollar_format(months_expenditures + this_months_total)
-  end
+    def play
+      get_possible_moves
+      move = @possible_moves.select { |k, v| k if v == @possible_moves.values.max }.keys[0]
+      @board.each do |row|
+        row.each do |tile|
+          if tile['id'] == move
+            tile['state'] = 'O'
+          end
+        end
+      end
+      check_for_winner([@board, @board.transpose, diagonals])
+      {score: @winner, board: @board}
+    end
 
-  def your_share
-    months_expenditures = Expenditure.where(:house_id => session[:house_id], :active => true).select("user_id, amount")
-    this_months_total = Utility.where(:house_id => session[:house_id], :active => true).sum("amount")
-    mates = User.where(:house_id => session[:house_id])
-    individual_total = this_months_total / mates.length
+    private
 
-    share_of_others_due = (months_expenditures.sum("amount") - months_expenditures.where(:user_id => session[:user_id]).sum("amount")) / mates.length
-    share_of_own = months_expenditures.where(:user_id => session[:user_id]).sum("amount") * (1 - (1.0 / mates.length))
-    share_of_utilities = this_months_total.to_f / mates.length
-    total_share = (share_of_utilities + (share_of_others_due - share_of_own)).ceil
-    return dollar_format(total_share)
-  end
-
-  def send_cashout_msg
-    months_expenditures = Expenditure.where(:house_id => session[:house_id], :active => true).select("user_id, amount")
-    mates = User.where(:house_id => session[:house_id])
-    this_months_total = Utility.where(:house_id => session[:house_id], :active => true).sum("amount") #this is what's being returned
-    individual_total = this_months_total / mates.length
-
-    if mates.length > 1
-      mates.each do |mate|
-        share_of_others_due = (months_expenditures.sum("amount") - months_expenditures.where(:user_id => mate.id).sum("amount")) / mates.length
-        share_of_own = months_expenditures.where(:user_id => mate.id).sum("amount") * (1 - (1.0 / mates.length))
-        share_of_utilities = this_months_total.to_f / mates.length
-        total_share = (share_of_utilities + (share_of_others_due - share_of_own)).ceil
-        text = "Hello #{mate.first_name}! We hope you've had a good month. #{session[:first_name]} has ended this month's billing cycle, which means it's time to pay the piper!\n\nThis month's total for rent and utilities was #{dollar_format(this_months_total)}, which works out to #{dollar_format(share_of_utilities.ceil)} per roommate. However, we've adjusted this number with regards to how much each roommate has already spent on communal items, so with this taken into account, your GRAND TOTAL comes out to #{dollar_format(total_share)}.\n\nThank you for using HouseKeeper! :)"
-        send_message(mate.email, "Bills In For This Month!", text)
+    def get_possible_moves
+      check_set([@board, @board.transpose, diagonals])
+      if @possible_moves.length < 1
+        best_guess
       end
     end
-  end
 
-  def send_message(to, subject, text)
-    RestClient.post "https://api:key-2yysjtw83re60djtlw22w4flfnyl8wt1"\
-    "@api.mailgun.net/v2/sandboxfac2f1ef29a84995bb38573a3c2b060d.mailgun.org/messages",
-    :from => "House Keeper <postmaster@sandboxfac2f1ef29a84995bb38573a3c2b060d.mailgun.org>",
-    :to => to,
-    :subject => subject,
-    :text => text
-  end
+    def diagonals
+      [[@board[0][0], @board[1][1], @board[2][2]],
+      [@board[0][2], @board[1][1], @board[2][0]]]
+    end
+
+    def check_set(sets)
+      sets.each do |set|
+        set.each do |row|
+          row_states = row.map { |tile| tile['state']}
+          if (row_states - ['O']).length == 1 && (row_states - ['O'])[0] == '?'
+            @possible_moves[row[row_states.index('?')]['id']] = 20
+          elsif (row_states - ['X']).length == 1 && (row_states - ['X'])[0] == '?'
+            @possible_moves[row[row_states.index('?')]['id']] = 10
+          end
+        end
+      end
+    end
+
+    def best_guess
+      if @board[1][1]['state'] == '?'
+        @possible_moves[@board[1][1]['id']] = 10
+      else
+        xs_on_board = []
+        @board.each_with_index do |row, row_index|
+          row.each_with_index do |tile, tile_index|
+            if tile['state'] == 'X'
+              xs_on_board << find_neighbors(row_index - 1, tile_index - 1)
+              xs_on_board << find_neighbors(row_index - 1, tile_index)
+              xs_on_board << find_neighbors(row_index - 1, tile_index + 1)
+              xs_on_board << find_neighbors(row_index, tile_index - 1)
+              xs_on_board << find_neighbors(row_index, tile_index + 1)
+              xs_on_board << find_neighbors(row_index + 1, tile_index - 1)
+              xs_on_board << find_neighbors(row_index + 1, tile_index)
+              xs_on_board << find_neighbors(row_index + 1, tile_index + 1)
+            end
+          end
+        end
+        array_of_xs_ids = xs_on_board.compact.select { |x| x['state'] == '?' }.map { |x| x['id'] }
+        array_of_xs_ids.each do |x|
+          if ['A1', 'A3', 'C1', 'C3'].include?(x)
+            @possible_moves[x] += 4
+          else
+            @possible_moves[x] += 2
+          end
+        end
+      end
+    end
+
+    def find_neighbors(y, x)
+      if y.between?(0, 2) && x.between?(0, 2)
+        @board[y][x]
+      end
+    end
+
+    def check_for_winner(sets)
+      if @winner.empty? && @possible_moves.length == 0
+        @winner = 'DRAW'
+      else
+        sets.each do |set|
+          set.each do |row|
+            row_states = row.map { |tile| tile['state']}
+            if (row_states - ['O']).length == 0
+              @winner = 'COMP'
+            elsif (row_states - ['X']).length == 0
+              @winner = 'USER'
+            end
+          end
+        end
+      end
+    end
+  end # class
+
+
+
+
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
