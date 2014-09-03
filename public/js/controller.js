@@ -6,36 +6,24 @@ app.controller('MainController', ["$scope", "$http", function($scope, $http) {
 
     $scope.toX = function(currentCell) {
         if (currentCell.state === '?') {
-            console.log(currentCell)
             currentCell.state = 'X'
             nextMove()
         }
-        $scope.toO
     }
 
     var nextMove = function() {
         $http.post('/next_move',
                    $scope.currentBoard)
                    .success(function(data) {
-                    // console.log(data)
-                    $scope.currentBoard = data
-                   })
-    }
-
-    $scope.toO = function() {
-
-    }
-
-    // $scope.setClass = function(currentCell) {
-    //     if (currentCell.x) {
-    //         return 'x'
-    //     }
-    //     else if (currentCell.o) {
-    //         return 'o'
-    //     }
-    //     else {
-    //         return 'emptyCell'
-    //     }
-    // }
+                    console.log(data)
+                    for (x = 0; x < 3; x++) {
+                        for (y = 0; y < 3; y++) {
+                            if ('"' + $scope.currentBoard[x][y]['id'] + '"' === data) {
+                                $scope.currentBoard[x][y]['state'] = 'O'
+                            }
+                        }
+                    }
+                })
+            }
 
 }]);

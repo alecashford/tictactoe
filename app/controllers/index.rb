@@ -6,5 +6,6 @@ end
 
 post '/next_move' do
   current_board = JSON.parse(request.body.read)
-  next_move(current_board)
+  game = Game.new(current_board)
+  game.play.to_json
 end
