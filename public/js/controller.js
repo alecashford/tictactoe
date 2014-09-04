@@ -13,7 +13,7 @@ app.controller('MainController', ["$scope", "$http", function($scope, $http) {
         $scope.winner = ''
     }    
 
-    $scope.toX = function(currentCell) {
+    $scope.drawX = function(currentCell) {
         if (currentCell.state == '?' && $scope.winner == '') {
             currentCell.state = 'X'
             nextMove()
@@ -35,7 +35,7 @@ app.controller('MainController', ["$scope", "$http", function($scope, $http) {
         }
     }
 
-    // Ajax call to 
+    // Ajax call to server
     var nextMove = function() {
         $http.post('/next_move',
                    $scope.currentBoard)
