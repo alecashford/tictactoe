@@ -22,7 +22,7 @@ gem 'activerecord'
 
 gem 'rake'
 
-gem 'bcrypt'
+gem 'bcrypt-ruby'
 
 # gem 'rest-client'
 gem 'rest_client'
