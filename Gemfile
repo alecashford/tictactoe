@@ -22,6 +22,8 @@ gem 'activerecord'
 
 gem 'rake'
 
+gem 'bcrypt'
+
 # gem 'rest-client'
 gem 'rest_client'
 
