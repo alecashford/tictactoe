@@ -4,7 +4,7 @@
   <center>
     <table border="3" width="300" height="300" id="board">
       <tr ng-repeat="row in currentBoard">
-        <td ng-repeat="cell in row" ng-click="toX(cell)">{{cell.state}}</td>
+        <td ng-repeat="cell in row" ng-click="drawX(cell)">{{cell.state}}</td>
       </tr>
     </table>
     <button ng-click="resetBoard()">Reset Board</button>
