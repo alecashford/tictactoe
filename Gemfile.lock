@@ -16,6 +16,10 @@ GEM
       tzinfo (~> 1.1)
     arel (5.0.1.20140414130214)
     backports (3.6.0)
+<<<<<<< HEAD
+=======
+    bcrypt (3.1.7)
+>>>>>>> 0f50c3c5634ffc7372b5b31baf32ae6b4b4c1b1a
     builder (3.2.2)
     daemons (1.1.9)
     diff-lcs (1.2.5)
@@ -80,6 +84,10 @@ PLATFORMS
 DEPENDENCIES
   activerecord
   activesupport
+<<<<<<< HEAD
+=======
+  bcrypt
+>>>>>>> 0f50c3c5634ffc7372b5b31baf32ae6b4b4c1b1a
   factory_girl
   faker
   pg
